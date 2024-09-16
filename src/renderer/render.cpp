@@ -171,6 +171,14 @@ void create_texture_2D(float* data, unsigned int width, unsigned int height, GLu
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, (void*)data);
     // glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_FLOAT, (void*)data);
     glGenerateMipmap(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void create_pbo(float* data, size_t size, GLuint* pbo) {
+    glGenBuffers(1, pbo);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, *pbo);
+    glBufferData(GL_PIXEL_UNPACK_BUFFER, size, (void*) data, GL_STREAM_DRAW);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 }
 
 void draw_quad(GLuint shaderProgram, GLuint VAO, GLuint texture) {

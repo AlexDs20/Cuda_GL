@@ -13,4 +13,6 @@ void create_shader_program(GLuint* shaderProgram);
 void create_quad(GLuint* VAO);
 void create_texture_2D(float* data, unsigned int width, unsigned int height, GLuint* texture);
 void draw_quad(GLuint shaderProgram, GLuint VAO, GLuint texture);
+
+void create_pbo(float* data, size_t size, GLuint* pbo);
 }
