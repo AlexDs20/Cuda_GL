@@ -3,41 +3,57 @@
 // #include <cuda_runtime.h>
 // #include <gl_interop.h>
 
-#include<stdio.h>
+#include <stdio.h>
 #include "renderer/render.h"
 
+void first_method();
+
 int main() {
+    if (1) {
+        first_method();
+    } else {
+    }
+}
+
+void first_method() {
+    // Rendering setup
     Render::setup_opengl(3, 3);
     GLFWwindow* window = Render::create_window(1024, 768, "Cuda_OpenGL_Interop");
     Render::setup_glad();
 
-    // GLuint shaderProgram;
-    // Render::create_shader_program(&shaderProgram);
+    GLuint shaderProgram;
+    Render::create_shader_program(&shaderProgram);
 
-    // GLuint quad_vao;
-    // Render::create_quad(&quad_vao);
+    GLuint quad_vao;
+    Render::create_quad(&quad_vao);
 
-    // int width = 1024;
-    // int height = 768;
-    // float* n = nullptr;
-    // GLuint texture;
-    // Render::create_texture_2D(n, width, height, &texture);
+    int width = 2;
+    int height = 2;
+    float texture_array[] = {
+        0.0f, 1.0f, 0.0f,
+        1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f,
+        1.0f, 1.0f, 1.0f,
+    };
+    GLuint texture;
+    Render::create_texture_2D(texture_array, width, height, &texture);
+
+    // TODO(alex): Setup CUDA
 
     glfwSwapInterval(1);
     while (!glfwWindowShouldClose(window)) {
         glClearColor(0.3, 0.5, 0.7, 1);
         glClear(GL_COLOR_BUFFER_BIT);
 
+        Render::draw_quad(shaderProgram, quad_vao, texture);
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
     glfwDestroyWindow(window);
     glfwTerminate();
-    // free(n);
-}
 
-void first_method() {
-    printf("HERE");
+
     // // Initialize
     // glad_init();
     // cudaFree(0);

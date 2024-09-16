@@ -11,14 +11,6 @@
 
 #include "renderer/render.h"
 
-
-void print(const float* v, const int N) {
-    for (int i=0; i<N; i++) {
-        printf("%f, ", v[i]);
-    }
-    printf("\n");
-}
-
 std::string read_file(const char* filepath) {
     std::string file_content;
 
@@ -89,51 +81,6 @@ GLFWwindow* create_window(const unsigned int width, const unsigned int height, c
     return window;
 }
 
-glm::mat4 compute_model_matrix(glm::vec3 position, glm::vec3 scale) {
-    glm::mat4 model(1.0f);
-    // Rotate
-    // if (rotationAngle != 0.0f) {
-    //     model = glm::rotate(model, glm::radians(rotationAngle), rotationAxis);
-    // }
-    // Translate
-    model = glm::translate(model, position);
-    // Scale
-    model = glm::scale(model, scale);
-    return model;
-}
-
-void update_and_draw(const float* field, float* renderField, GLuint texture, int N, int M, glm::mat4 matrix, GLuint quad_vao, GLuint shaderProgram) {
-    // normalize(renderField, field, N*M);
-    update_texture_2D(renderField, N, M, &texture);
-    set_uniform_m4f(shaderProgram, "model", matrix);
-    draw_rect(shaderProgram, quad_vao, texture);
-}
-
-void set_uniform_m4f(GLuint programID, const char* name, const glm::mat4& value) {
-    glUseProgram(programID);
-    glUniformMatrix4fv(glGetUniformLocation(programID, name), 1, GL_FALSE, &value[0][0]);
-}
-
-void set_uniform_v3f(GLuint programID, const char* name, const glm::vec3& value) {
-    glUseProgram(programID);
-    glUniform3fv(glGetUniformLocation(programID, name), 1, &value[0]);
-}
-
-void set_uniform_1f(GLuint programID, const char* name, const float value) {
-    glUseProgram(programID);
-    glUniform1f(glGetUniformLocation(programID, name), value);
-}
-
-// void set_uniform_texture_3D(GLuint programID, const char* name, const int  value) {
-//     // TODO:
-//     // glUseProgram(shaderProgram);
-//     // glActiveTexture(GL_TEXTURE0);
-//     // glBindTexture(GL_TEXTURE_3D, texture);
-//
-//     // glUniform1i(glGetUniformLocation(shaderProgram, "texture1"), 0);
-// }
-
-// 2D
 void create_shader_program(GLuint* shaderProgram) {
     std::string  vertex_shader_string = read_file("src/shaders/quad.vert.glsl");
     const char* vertexShaderSource = vertex_shader_string.c_str();
@@ -174,14 +121,23 @@ void create_shader_program(GLuint* shaderProgram) {
 
 void create_quad(GLuint* VAO) {
     const float quadVertices[] = {
-      // X     Y         textCoord
-       -0.5f,-0.5f,     0.0f, 0.0f,
-        0.5f,-0.5f,     1.0f, 0.0f,
-        0.5f, 0.5f,     1.0f, 1.0f,
+      // X     Y
+       -0.5f,-0.5f,
+        0.5f,-0.5f,
+        0.5f, 0.5f,
 
-        0.5f, 0.5f,     1.0f, 1.0f,
-       -0.5f, 0.5f,     0.0f, 1.0f,
-       -0.5f,-0.5f,     0.0f, 0.0f,
+        0.5f, 0.5f,
+       -0.5f, 0.5f,
+       -0.5f,-0.5f,
+
+      // textCoord
+        0.0f, 0.0f,
+        1.0f, 0.0f,
+        1.0f, 1.0f,
+
+        1.0f, 1.0f,
+        0.0f, 1.0f,
+        0.0f, 0.0f,
     };
 
     GLuint VBO;
@@ -192,9 +148,9 @@ void create_quad(GLuint* VAO) {
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2*sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)(12*sizeof(float)));
     glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -207,39 +163,17 @@ void create_texture_2D(float* data, unsigned int width, unsigned int height, GLu
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_FLOAT, (void*)data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, (void*)data);
+    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_FLOAT, (void*)data);
     glGenerateMipmap(GL_TEXTURE_2D);
 }
 
-void create_texture_byte_2D(int* data, unsigned int width, unsigned int height, GLuint* texture) {
-    glGenTextures(1, texture);
-    glBindTexture(GL_TEXTURE_2D, *texture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_BYTE, (void*)data);
-    glGenerateMipmap(GL_TEXTURE_2D);
-}
-
-void update_texture_2D(float* data, unsigned int width, unsigned int height, GLuint* texture) {
-    glBindTexture(GL_TEXTURE_2D, *texture);
-    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, (void*)data);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_FLOAT, (void*)data);
-}
-
-void update_texture_byte_2D(int* data, unsigned int width, unsigned int height, GLuint* texture) {
-    glBindTexture(GL_TEXTURE_2D, *texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_BYTE, (void*)data);
-}
-
-void draw_rect(unsigned int shaderProgram, unsigned int VAO, GLuint texture) {
+void draw_quad(GLuint shaderProgram, GLuint VAO, GLuint texture) {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture);
 
@@ -249,4 +183,5 @@ void draw_rect(unsigned int shaderProgram, unsigned int VAO, GLuint texture) {
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 }
+
 }
