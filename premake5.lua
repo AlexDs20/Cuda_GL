@@ -43,7 +43,8 @@ project "OpenGL_Cuda"
         "./src/",
         "./deps/glad/include",
         "./deps/glfw/include",
-        "./deps/glm/"
+        "./deps/glm/",
+        "/usr/local/cuda-12.6/include"
     }
 
     files
@@ -51,6 +52,9 @@ project "OpenGL_Cuda"
         "src/**.cpp"
     }
 
-    -- buildoptions { "" }
+    libdirs
+    {
+        "/usr/local/cuda/lib64"
+    }
 
-    links { "GLAD", "GLFW", "GLM" }
+    links { "GLAD", "GLFW", "GLM", "cuda", "cudart" }
