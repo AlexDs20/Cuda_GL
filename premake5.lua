@@ -1,3 +1,5 @@
+require "premake/premake5-cuda"
+
 workspace "OpenGL_Cuda"
     location "generated"
     language "C++"
@@ -36,25 +38,27 @@ include "deps/glm.lua"
 
 project "OpenGL_Cuda"
     kind "WindowedApp"
-    toolset "clang"
+    toolset "nvcc"
 
-    includedirs
-    {
+    includedirs {
         "./src/",
         "./deps/glad/include",
         "./deps/glfw/include",
         "./deps/glm/",
-        "/usr/local/cuda-12.6/include"
+        --"/usr/local/cuda-12.6/include"
     }
 
-    files
-    {
+    files {
+        "src/main.cu",
         "src/**.cpp"
     }
 
-    libdirs
-    {
-        "/usr/local/cuda/lib64"
+    rules { "cu" }
+
+    cudaCompilerOptions { "--gpu-architecture=sm_89" }
+
+    libdirs {
+        --"/usr/local/cuda/lib64"
     }
 
     links { "GLAD", "GLFW", "GLM", "cuda", "cudart" }
