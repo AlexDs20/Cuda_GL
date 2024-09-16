@@ -164,15 +164,15 @@ void first_method() {
 }
 
 __global__ void
-updateTexture(unsigned char* d_textureData, int width, int height) {
+updateTexture(unsigned char* d_textureData, int width, int height, int i) {
     const int x = threadIdx.x + blockIdx.x * blockDim.x;
     const int y = threadIdx.y + blockIdx.y * blockDim.y;
 
     if (x<width && y < height) {
         int idx = y * width + x;
-        d_textureData[idx * 4 + 0] = 255;
-        d_textureData[idx * 4 + 1] = 0;
-        d_textureData[idx * 4 + 2] = 0;
+        d_textureData[idx * 4 + 0] = (255 + x*i)%255;
+        d_textureData[idx * 4 + 1] = (255 + y*i)%255;
+        d_textureData[idx * 4 + 2] = (255 + (x+y)*i)%255;
         d_textureData[idx * 4 + 3] = 255;
     }
 
@@ -191,18 +191,13 @@ void second_method(){
     GLuint quad_vao;
     Render::create_quad(&quad_vao);
 
-    int width = 2;
-    int height = 2;
-    unsigned char texture_array[] = {
-        0,   255, 0,   255,
-        255, 0,   0,   255,
-        0,   0,   255, 255,
-        255, 255, 255, 255,
-    };
+    int width = 5;
+    int height = 5;
+
     GLuint texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_array); // Initialize texture
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr); // Initialize texture
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -211,23 +206,24 @@ void second_method(){
     cudaGraphicsGLRegisterImage(&cudaResource, texture, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard);
 
     // Update texture
-    cudaGraphicsMapResources(1, &cudaResource, 0);
     cudaArray* cuArray;
-    cudaGraphicsSubResourceGetMappedArray(&cuArray, cudaResource, 0, 0);
     unsigned char* d_textureData;
     cudaMalloc(&d_textureData, width*height*sizeof(unsigned char)*4);
-    dim3 blockDim(1, 1, 1);
+    dim3 blockDim(16, 16, 1);
     dim3 gridDim( (width+blockDim.x-1)/blockDim.x, (height+blockDim.y-1)/blockDim.y, 1 );
-    updateTexture<<<gridDim, blockDim>>>(d_textureData, width, height);
-    cudaMemcpyToArray(cuArray, 0, 0, d_textureData, width*height*sizeof(unsigned char)*4, cudaMemcpyDeviceToDevice);
-    cudaFree(cuArray);
-    cudaGraphicsUnmapResources(1, &cudaResource, 0);
-
 
     glfwSwapInterval(1);
+    int i = 0;
     while (!glfwWindowShouldClose(window)) {
         glClearColor(0.3, 0.5, 0.7, 1);
         glClear(GL_COLOR_BUFFER_BIT);
+
+        cudaGraphicsMapResources(1, &cudaResource, 0);
+        cudaGraphicsSubResourceGetMappedArray(&cuArray, cudaResource, 0, 0);            // Get a cudaArray to actually be able to access texture data
+        updateTexture<<<gridDim, blockDim>>>(d_textureData, width, height, i++);
+        cudaMemcpyToArray(cuArray, 0, 0, d_textureData, width*height*sizeof(unsigned char)*4, cudaMemcpyDeviceToDevice);
+        cudaGraphicsUnmapResources(1, &cudaResource, 0);
+        cudaDeviceSynchronize();
 
         Render::draw_quad(shaderProgram, quad_vao, texture);
 
@@ -235,6 +231,7 @@ void second_method(){
         glfwPollEvents();
     }
 
+    cudaFree(d_textureData);
     glDeleteTextures(1, &texture);
     glfwDestroyWindow(window);
     glfwTerminate();
