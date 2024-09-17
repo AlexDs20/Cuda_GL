@@ -16,15 +16,12 @@
     }                                                                       \
 }
 
+void print_gpu_prop();
 void first_method();
-void second_method();
 
 int main() {
-    if (0) {
-        first_method();
-    } else {
-        second_method();
-    }
+    print_gpu_prop();
+    first_method();
 }
 
 void print_gpu_prop() {
@@ -89,80 +86,6 @@ void print_gpu_prop() {
     cudaDeviceReset();
 }
 
-__global__ void empty_kernel() {
-    const int x = threadIdx.x;
-    const int y = threadIdx.y;
-    printf("(%d,%d): \n", x, y);
-}
-
-void first_method() {
-    // --------------------------
-    // OpenGL setup
-    Render::setup_opengl(3, 3);
-    GLFWwindow* window = Render::create_window(1024, 768, "Cuda_OpenGL_Interop");
-    Render::setup_glad();
-
-    GLuint shaderProgram;
-    Render::create_shader_program(&shaderProgram);
-
-    GLuint quad_vao;
-    Render::create_quad(&quad_vao);
-
-    int width = 2;
-    int height = 2;
-    float texture_array[] = {
-        0.0f, 1.0f, 0.0f,
-        1.0f, 0.0f, 0.0f,
-        0.0f, 0.0f, 1.0f,
-        1.0f, 1.0f, 1.0f,
-    };
-    GLuint texture;
-    Render::create_texture_2D(texture_array, width, height, &texture);
-
-    // --------------------------
-    // Setup CUDA
-    print_gpu_prop();
-    int device = 0;
-    cudaSetDevice(device);
-
-    // Register texture with CUDA
-    struct cudaGraphicsResource* cudaResource;
-    cudaGraphicsGLRegisterImage(&cudaResource, texture, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsNone);
-
-    // map the opengl texture to cuda
-    cudaArray* cuArray;
-
-    cudaGraphicsMapResources(1, &cudaResource, 0);
-    cudaGraphicsSubResourceGetMappedArray(&cuArray, cudaResource, 0, 0);
-    dim3 blockDim(1,1,1);
-    dim3 gridDim(width,height,1);
-    empty_kernel <<< blockDim, gridDim >>> ();
-    errCheck(cudaDeviceSynchronize());
-
-    // unmap the openGL texture from cuda
-    cudaGraphicsUnmapResources(1, &cudaResource, 0);
-
-    glfwSwapInterval(1);
-    while (!glfwWindowShouldClose(window)) {
-        glClearColor(0.3, 0.5, 0.7, 1);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        Render::draw_quad(shaderProgram, quad_vao, texture);
-
-        glfwSwapBuffers(window);
-        glfwPollEvents();
-    }
-
-    // Cleanup
-    // Unregister the openGL resource from CUDA
-    cudaGraphicsUnregisterResource(cudaResource);
-    cudaDeviceReset();
-    // Destroy opengl texture
-    glDeleteTextures(1, &texture);
-    glfwDestroyWindow(window);
-    glfwTerminate();
-}
-
 __global__ void
 updateTexture(unsigned char* d_textureData, int width, int height, int i) {
     const int x = threadIdx.x + blockIdx.x * blockDim.x;
@@ -178,7 +101,7 @@ updateTexture(unsigned char* d_textureData, int width, int height, int i) {
 
 }
 
-void second_method(){
+void first_method(){
     // --------------------------
     // OpenGL setup
     Render::setup_opengl(3, 3);
@@ -191,8 +114,8 @@ void second_method(){
     GLuint quad_vao;
     Render::create_quad(&quad_vao);
 
-    int width = 5;
-    int height = 5;
+    int width = 3;
+    int height = 3;
 
     GLuint texture;
     glGenTextures(1, &texture);
