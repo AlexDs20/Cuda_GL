@@ -126,12 +126,12 @@ void first_method(){
 
     // Register the texture with CUDA
     cudaGraphicsResource* cudaResource;
-    cudaGraphicsGLRegisterImage(&cudaResource, texture, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard);
+    errCheck(cudaGraphicsGLRegisterImage(&cudaResource, texture, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard));
 
     // Update texture
     cudaArray* cuArray;
     unsigned char* d_textureData;
-    cudaMalloc(&d_textureData, width*height*sizeof(unsigned char)*4);
+    errCheck(cudaMalloc(&d_textureData, width*height*sizeof(unsigned char)*4));
     dim3 blockDim(16, 16, 1);
     dim3 gridDim( (width+blockDim.x-1)/blockDim.x, (height+blockDim.y-1)/blockDim.y, 1 );
 
@@ -141,12 +141,12 @@ void first_method(){
         glClearColor(0.3, 0.5, 0.7, 1);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        cudaGraphicsMapResources(1, &cudaResource, 0);
-        cudaGraphicsSubResourceGetMappedArray(&cuArray, cudaResource, 0, 0);            // Get a cudaArray to actually be able to access texture data
+        errCheck(cudaGraphicsMapResources(1, &cudaResource, 0));
+        errCheck(cudaGraphicsSubResourceGetMappedArray(&cuArray, cudaResource, 0, 0));            // Get a cudaArray to actually be able to access texture data
         updateTexture<<<gridDim, blockDim>>>(d_textureData, width, height, i++);
-        cudaMemcpyToArray(cuArray, 0, 0, d_textureData, width*height*sizeof(unsigned char)*4, cudaMemcpyDeviceToDevice);
-        cudaGraphicsUnmapResources(1, &cudaResource, 0);
-        cudaDeviceSynchronize();
+        errCheck(cudaMemcpyToArray(cuArray, 0, 0, d_textureData, width*height*sizeof(unsigned char)*4, cudaMemcpyDeviceToDevice));
+        errCheck(cudaGraphicsUnmapResources(1, &cudaResource, 0));
+        errCheck(cudaDeviceSynchronize());
 
         Render::draw_quad(shaderProgram, quad_vao, texture);
 
