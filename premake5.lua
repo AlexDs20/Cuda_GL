@@ -40,6 +40,8 @@ project "OpenGL_Cuda"
     kind "WindowedApp"
     toolset "nvcc"
 
+    cudaPath "/opt/cuda/"
+
     includedirs {
         "./src/",
         "./deps/glad/include",
@@ -55,7 +57,7 @@ project "OpenGL_Cuda"
 
     rules { "cu" }
 
-    cudaCompilerOptions { "--gpu-architecture=sm_89" }
+    cudaCompilerOptions { "--gpu-architecture=sm_50" }
 
     libdirs {
         --"/usr/local/cuda/lib64"

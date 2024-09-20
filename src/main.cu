@@ -3,6 +3,7 @@
 #include <cuda_runtime.h>
 #include <cuda_gl_interop.h>
 #include <stdio.h>
+#include <iostream>
 
 #include "renderer/render.h"
 
@@ -91,14 +92,13 @@ updateTexture(unsigned char* d_textureData, int width, int height, int i) {
     const int x = threadIdx.x + blockIdx.x * blockDim.x;
     const int y = threadIdx.y + blockIdx.y * blockDim.y;
 
-    if (x<width && y < height) {
+    if ((x<width) & (y<height)) {
         int idx = y * width + x;
         d_textureData[idx * 4 + 0] = (255 + x*i)%255;
         d_textureData[idx * 4 + 1] = (255 + y*i)%255;
         d_textureData[idx * 4 + 2] = (255 + (x+y)*i)%255;
         d_textureData[idx * 4 + 3] = 255;
     }
-
 }
 
 void first_method(){
@@ -114,8 +114,8 @@ void first_method(){
     GLuint quad_vao;
     Render::create_quad(&quad_vao);
 
-    int width = 3;
-    int height = 3;
+    int width = 2;
+    int height = 2;
 
     GLuint texture;
     glGenTextures(1, &texture);
@@ -123,15 +123,23 @@ void first_method(){
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr); // Initialize texture
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // Check which GPU is used
+    const GLubyte* vendor = glGetString(GL_VENDOR); // Returns the vendor
+    const GLubyte* renderer = glGetString(GL_RENDERER); 
+    std::cout << vendor << std::endl;
+    std::cout << renderer << std::endl;
 
     // Register the texture with CUDA
-    cudaGraphicsResource* cudaResource;
+    struct cudaGraphicsResource* cudaResource;
     errCheck(cudaGraphicsGLRegisterImage(&cudaResource, texture, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard));
 
     // Update texture
     cudaArray* cuArray;
     unsigned char* d_textureData;
     errCheck(cudaMalloc(&d_textureData, width*height*sizeof(unsigned char)*4));
+    errCheck(cudaDeviceSynchronize());
     dim3 blockDim(16, 16, 1);
     dim3 gridDim( (width+blockDim.x-1)/blockDim.x, (height+blockDim.y-1)/blockDim.y, 1 );
 
@@ -144,7 +152,7 @@ void first_method(){
         errCheck(cudaGraphicsMapResources(1, &cudaResource, 0));
         errCheck(cudaGraphicsSubResourceGetMappedArray(&cuArray, cudaResource, 0, 0));            // Get a cudaArray to actually be able to access texture data
         updateTexture<<<gridDim, blockDim>>>(d_textureData, width, height, i++);
-        errCheck(cudaMemcpyToArray(cuArray, 0, 0, d_textureData, width*height*sizeof(unsigned char)*4, cudaMemcpyDeviceToDevice));
+        errCheck(cudaMemcpy2DToArray(cuArray, 0, 0, d_textureData, width*sizeof(unsigned char)*4, width*sizeof(unsigned char)*4, height, cudaMemcpyDefault));
         errCheck(cudaGraphicsUnmapResources(1, &cudaResource, 0));
         errCheck(cudaDeviceSynchronize());
 

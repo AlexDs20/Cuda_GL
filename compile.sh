@@ -7,4 +7,4 @@ pushd generated
     bear -- make -j$(nproc) config=debug
     cp compile_commands.json ..
 popd
-LD_LIBRARY_PATH=./build/bin/linux/GLAD/debug/:./build/bin/linux/GLFW/debug/ ./build/bin/linux/OpenGL_Cuda/debug/OpenGL_Cuda
+__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia LD_LIBRARY_PATH=./build/bin/linux/GLAD/debug/:./build/bin/linux/GLFW/debug/:./build/bin/linux/GLM/debug/ ./build/bin/linux/OpenGL_Cuda/debug/OpenGL_Cuda
