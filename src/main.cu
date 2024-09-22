@@ -47,6 +47,11 @@ void update_texture(){
     GLFWwindow* window = Render::create_window(1024, 768, "Cuda_OpenGL_Interop");
     Render::setup_glad();
 
+    // Check which GPU is used
+    const GLubyte* vendor = glGetString(GL_VENDOR); // Returns the vendor
+    const GLubyte* renderer = glGetString(GL_RENDERER);
+    printf("GPU used by OpenGL: \n\t Vendor: %s, Renderer:%s\n", vendor, renderer);
+
     GLuint shaderProgram;
     Render::create_shader_program(&shaderProgram, "src/shaders/quad_texture.vert.glsl", "src/shaders/quad_texture.frag.glsl");
 
@@ -60,20 +65,15 @@ void update_texture(){
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr); // Initialize texture
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glBindTexture(GL_TEXTURE_2D, 0);
-
-    // Check which GPU is used
-    const GLubyte* vendor = glGetString(GL_VENDOR); // Returns the vendor
-    const GLubyte* renderer = glGetString(GL_RENDERER);
-    printf("GPU used by OpenGL: %s, %s\n", vendor, renderer);
 
     // Register the texture with CUDA
     struct cudaGraphicsResource* cudaResource;
     errCheck(cudaGraphicsGLRegisterImage(&cudaResource, texture, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard));
 
-    // Update texture
+    // Create associated data to be able to use the texture in CUDA
     cudaArray* cuArray;
     unsigned char* d_textureData;
     errCheck(cudaMalloc(&d_textureData, width*height*sizeof(unsigned char)*4));
@@ -87,6 +87,7 @@ void update_texture(){
         glClearColor(0.3, 0.5, 0.7, 1);
         glClear(GL_COLOR_BUFFER_BIT);
 
+        // Update Texture -> Map, get pointer to data
         errCheck(cudaGraphicsMapResources(1, &cudaResource, 0));
         errCheck(cudaGraphicsSubResourceGetMappedArray(&cuArray, cudaResource, 0, 0));            // Get a cudaArray to actually be able to access texture data
         kernel_update_texture<<<gridDim, blockDim>>>(d_textureData, width, height, i++);
@@ -126,6 +127,11 @@ void update_vbo() {
     GLFWwindow* window = Render::create_window(1024, 768, "Cuda_OpenGL_Interop");
     Render::setup_glad();
 
+    // Check which GPU is used
+    const GLubyte* vendor = glGetString(GL_VENDOR); // Returns the vendor
+    const GLubyte* renderer = glGetString(GL_RENDERER);
+    printf("GPU used by OpenGL: %s, %s\n", vendor, renderer);
+
     GLuint shaderProgram;
     Render::create_shader_program(&shaderProgram, "src/shaders/quad.vert.glsl", "src/shaders/quad.frag.glsl");
 
@@ -162,18 +168,13 @@ void update_vbo() {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    // Check which GPU is used
-    const GLubyte* vendor = glGetString(GL_VENDOR); // Returns the vendor
-    const GLubyte* renderer = glGetString(GL_RENDERER);
-    printf("GPU used by OpenGL: %s, %s\n", vendor, renderer);
-
     // Register the VAO with CUDA
     struct cudaGraphicsResource* cudaResource;
     errCheck(cudaGraphicsGLRegisterBuffer(&cudaResource, VAO, cudaGraphicsRegisterFlagsWriteDiscard));
 
-    // Map VAO resource to cuda
-    float* d_vboData;
-    size_t d_size;
+    // Setup cuda variables
+    float* d_vboData;        // Will contain the device address where the data are
+    size_t d_size;           // Will get size of the data
     int width = 2;
     int height = 2;
     dim3 blockDim(16, 16, 1);
@@ -187,6 +188,7 @@ void update_vbo() {
         glClearColor(0.3, 0.5, 0.7, 1);
         glClear(GL_COLOR_BUFFER_BIT);
 
+        // Map VAO resource to cuda
         errCheck(cudaGraphicsMapResources(1, &cudaResource, 0));
         errCheck(cudaGraphicsResourceGetMappedPointer((void**)&d_vboData, &d_size, cudaResource));
         kernel_update_vertices<<<gridDim, blockDim>>>(d_vboData, width, height, t);
