@@ -81,11 +81,11 @@ GLFWwindow* create_window(const unsigned int width, const unsigned int height, c
     return window;
 }
 
-void create_shader_program(GLuint* shaderProgram) {
-    std::string  vertex_shader_string = read_file("src/shaders/quad.vert.glsl");
+void create_shader_program(GLuint* shaderProgram, const char* vertex_shader, const char* fragment_shader) {
+    std::string  vertex_shader_string = read_file(vertex_shader);
     const char* vertexShaderSource = vertex_shader_string.c_str();
 
-    std::string fragment_shader_string = read_file("src/shaders/quad.frag.glsl");
+    std::string fragment_shader_string = read_file(fragment_shader);
     const char *fragmentShaderSource = fragment_shader_string.c_str();
 
     GLuint vertexShader;
