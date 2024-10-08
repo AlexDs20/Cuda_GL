@@ -1,16 +1,15 @@
 #!/bin/bash
 
 CONFIG=debug
+GENERATED="generated"
 
 if [ -d build/bin/linux/OpenGL_Cuda ]; then
-    rm -r build/bin/linux/OpenGL_Cuda
+    rm -r build/
 fi
-if [ -d generated ]; then
-    rm -r generated
-fi
-./premake/premake5 gmake2
 
-pushd generated
+./premake/premake5 gmake2
+pushd $GENERATED
+    # bear -- make -j$(nproc) config=$CONFIG
     make -j$(nproc) config=$CONFIG
 popd
 

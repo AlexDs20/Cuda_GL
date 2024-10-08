@@ -130,7 +130,7 @@ void update_vbo() {
     // Check which GPU is used
     const GLubyte* vendor = glGetString(GL_VENDOR); // Returns the vendor
     const GLubyte* renderer = glGetString(GL_RENDERER);
-    printf("GPU used by OpenGL: %s, %s\n", vendor, renderer);
+    printf("GPU used by OpenGL: \n\t Vendor: %s, Renderer:%s\n", vendor, renderer);
 
     GLuint shaderProgram;
     Render::create_shader_program(&shaderProgram, "src/shaders/quad.vert.glsl", "src/shaders/quad.frag.glsl");

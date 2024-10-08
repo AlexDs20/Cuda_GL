@@ -31,11 +31,3 @@ project "GLM"
             "_GLM_WIN32",
             "_CRT_SECURE_NO_WARNINGS"
         }
-
-    filter "configurations:debug"
-        runtime "debug"
-        symbols "on"
-
-    filter "configurations:release"
-        runtime "release"
-        optimize "on"
