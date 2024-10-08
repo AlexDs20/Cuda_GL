@@ -36,31 +36,49 @@ include "deps/glad.lua"
 include "deps/glfw.lua"
 include "deps/glm.lua"
 
-project "OpenGL_Cuda"
-    kind "WindowedApp"
+
+project "KERNELS"
+    kind "SharedLib"
     toolset "nvcc"
 
     cudaPath "/opt/cuda/"
 
     includedirs {
-        "./src/",
-        "./deps/glad/include",
-        "./deps/glfw/include",
-        "./deps/glm/",
-        -- "/usr/local/cuda-12.6/include"
+        "./src/kernels/",
     }
 
     files {
-        "src/main.cu",
-        "src/**.cpp"
+        "src/kernels/*.cu",
     }
 
     rules { "cu" }
 
     cudaCompilerOptions { "--gpu-architecture=sm_50" }
 
+    links { "cuda", "cudart" }
+
+
+
+project "OpenGL_Cuda"
+    kind "WindowedApp"
+    toolset "clang"
+
+    includedirs {
+        "./src/",
+        "./deps/glad/include",
+        "./deps/glfw/include",
+        "./deps/glm/",
+        "/opt/cuda/include"
+        -- "/usr/local/cuda-12.6/include"
+    }
+
+    files {
+        "src/**.cpp"
+    }
+
     libdirs {
+        "/opt/cuda/lib64"
         -- "/usr/local/cuda/lib64"
     }
 
-    links { "GLAD", "GLFW", "GLM", "cuda", "cudart" }
+    links { "GLAD", "GLFW", "GLM", "cuda", "cudart", "KERNELS" }
