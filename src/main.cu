@@ -40,6 +40,10 @@ kernel_update_texture(unsigned char* d_textureData, int width, int height, int i
     }
 }
 
+void kernel_update_texture_wrapper(dim3 gridDim, dim3 blockDim, unsigned char* d_textureData, int width, int height, int i) {
+    kernel_update_texture<<<gridDim, blockDim>>>(d_textureData, width, height, i++);
+}
+
 void update_texture(){
     // --------------------------
     // OpenGL setup
@@ -90,7 +94,8 @@ void update_texture(){
         // Update Texture -> Map, get pointer to data
         errCheck(cudaGraphicsMapResources(1, &cudaResource, 0));
         errCheck(cudaGraphicsSubResourceGetMappedArray(&cuArray, cudaResource, 0, 0));            // Get a cudaArray to actually be able to access texture data
-        kernel_update_texture<<<gridDim, blockDim>>>(d_textureData, width, height, i++);
+        kernel_update_texture_wrapper(gridDim, blockDim, d_textureData, width, height, i++);
+        // kernel_update_texture<<<gridDim, blockDim>>>(d_textureData, width, height, i++);
         errCheck(cudaMemcpy2DToArray(cuArray, 0, 0, d_textureData, width*sizeof(unsigned char)*4, width*sizeof(unsigned char)*4, height, cudaMemcpyDefault));
         errCheck(cudaGraphicsUnmapResources(1, &cudaResource, 0));
         errCheck(cudaDeviceSynchronize());
@@ -118,6 +123,10 @@ kernel_update_vertices(float* vertex, int width, int height, float t){
         vertex[idx * 2 + 1] = (y-0.5) + 0.2*sinf(t);
     }
 
+}
+
+void kernel_update_vertices_wrapper(dim3 gridDim, dim3 blockDim, float* vertex, int width, int height, float t) {
+    kernel_update_vertices<<<gridDim, blockDim>>>(vertex, width, height, t);
 }
 
 void update_vbo() {
@@ -191,7 +200,8 @@ void update_vbo() {
         // Map VAO resource to cuda
         errCheck(cudaGraphicsMapResources(1, &cudaResource, 0));
         errCheck(cudaGraphicsResourceGetMappedPointer((void**)&d_vboData, &d_size, cudaResource));
-        kernel_update_vertices<<<gridDim, blockDim>>>(d_vboData, width, height, t);
+        kernel_update_vertices_wrapper(gridDim, blockDim, d_vboData, width, height, t);
+        // kernel_update_vertices<<<gridDim, blockDim>>>(d_vboData, width, height, t);
         errCheck(cudaGraphicsUnmapResources(1, &cudaResource, 0));
         errCheck(cudaDeviceSynchronize());
 
