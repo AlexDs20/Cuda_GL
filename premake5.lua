@@ -10,10 +10,12 @@ workspace "OpenGL_Cuda"
     filter { "configurations:debug" }
         defines { "_DEBUG" }
         symbols "On"
+        optimize "Off"
         runtime "Debug"
 
     filter { "configurations:release" }
         defines { "_RELEASE" }
+        symbols "Off"
         optimize "On"
         runtime "Release"
 
