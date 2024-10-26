@@ -1,7 +1,7 @@
 #!/bin/bash
 
 CONFIG=debug
-GENERATED="generated"
+GENERATED=. # "generated"
 
 if [ -d build/bin/linux/OpenGL_Cuda ]; then
     rm -r build/
@@ -9,8 +9,8 @@ fi
 
 ./premake/premake5 gmake2
 pushd $GENERATED
-    # bear -- make -j$(nproc) config=$CONFIG
-    make -j$(nproc) config=$CONFIG
+    bear -- make -j$(nproc) config=$CONFIG
+    # make -j$(nproc) config=$CONFIG
 popd
 
 export __NV_PRIME_RENDER_OFFLOAD=1

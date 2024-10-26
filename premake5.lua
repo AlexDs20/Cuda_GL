@@ -1,7 +1,7 @@
 require "premake/premake5-cuda"
 
 workspace "OpenGL_Cuda"
-    location "generated"
+    -- location "generated"
     language "C++"
     architecture "x86_64"
 

@@ -17,14 +17,14 @@
     }                                                                       \
 }
 
-void print_gpu_prop();
+// void print_gpu_prop();
 void update_texture();
-void update_vbo();
+// void update_vbo();
 
 int main() {
-    print_gpu_prop();
+    // print_gpu_prop();
     update_texture();
-    update_vbo();
+    // update_vbo();
 }
 
 void update_texture(){
@@ -95,6 +95,7 @@ void update_texture(){
     glfwTerminate();
 }
 
+#if 0
 void update_vbo() {
     // --------------------------
     // OpenGL setup
@@ -139,7 +140,7 @@ void update_vbo() {
     glGenBuffers(1, &EBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,  6* sizeof(unsigned int), (void*)indices, GL_DYNAMIC_DRAW);
-    
+
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
@@ -154,7 +155,7 @@ void update_vbo() {
     int height = 2;
     dim3 blockDim(16, 16, 1);
     dim3 gridDim( (width+blockDim.x-1)/blockDim.x, (height+blockDim.y-1)/blockDim.y, 1 );
-    
+
     glfwSwapInterval(1);
     float t = 0;
     float dt = 1.0f/60.0f;
@@ -239,4 +240,4 @@ void print_gpu_prop() {
     }
     errCheck(cudaDeviceReset());
 }
-
+#endif
