@@ -18,15 +18,104 @@
 }
 
 // void print_gpu_prop();
-void update_texture();
+// void update_texture();
+void update_texture_red_float();
+// void read_gl_texture_using_cuda();
 // void update_vbo();
+
 
 int main() {
     // print_gpu_prop();
-    update_texture();
     // update_vbo();
+    // update_texture();
+    update_texture_red_float();
 }
 
+void update_texture_red_float(){
+    // --------------------------
+    // OpenGL setup
+    Render::setup_opengl(3, 3);
+    GLFWwindow* window = Render::create_window(1024, 768, "Cuda_OpenGL_Interop");
+    Render::setup_glad();
+
+    // Check which GPU is used
+    const GLubyte* vendor = glGetString(GL_VENDOR); // Returns the vendor
+    const GLubyte* renderer = glGetString(GL_RENDERER);
+    printf("GPU used by OpenGL: \n\t Vendor: %s, Renderer:%s\n", vendor, renderer);
+
+    GLuint shaderProgram;
+    Render::create_shader_program(&shaderProgram, "src/shaders/quad_texture.vert.glsl", "src/shaders/quad_texture.frag.glsl");
+
+    GLuint quad_vao;
+    Render::create_quad(&quad_vao);
+
+    int width = 62;
+    int height = 62;
+    dim3 blockDim(16, 16, 1);
+    dim3 gridDim( (width+blockDim.x-1)/blockDim.x, (height+blockDim.y-1)/blockDim.y, 1 );
+
+    //==============================
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr); // Initialize texture
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // Register the texture with CUDA
+    struct cudaGraphicsResource* cudaResource;
+    errCheck(cudaGraphicsGLRegisterImage(&cudaResource, texture, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard));
+    errCheck(cudaDeviceSynchronize());
+
+    // Create associated data to be able to use the texture in CUDA
+    cudaArray* cuArray;
+    unsigned char* d_textureData;
+    errCheck(cudaMalloc(&d_textureData, height*width*sizeof(unsigned char)));
+    errCheck(cudaDeviceSynchronize());
+
+    // Update Texture -> Map, get pointer to data
+    errCheck(cudaGraphicsMapResources(1, &cudaResource, 0));
+    errCheck(cudaGraphicsSubResourceGetMappedArray(&cuArray, cudaResource, 0, 0));            // Get a cudaArray to actually be able to access texture data
+
+    cudaExtent extent;
+    cudaChannelFormatDesc desc;
+    errCheck(cudaArrayGetInfo(&desc, &extent, nullptr, cuArray));
+    printf("Width: %zu, Height: %zu, Depth: %zu\n", extent.width, extent.height, extent.depth);
+    printf("Number of Channels: (%d, %d, %d, %d)\n", desc.x, desc.y, desc.z, desc.w);
+    printf("Channel Data Type: %d\n", desc.f);
+
+    float* d_dataSource;
+    errCheck(cudaMalloc(&d_dataSource, width*height*sizeof(float)));
+
+    normalize(gridDim, blockDim, d_textureData, d_dataSource, width, height);
+
+    errCheck(cudaMemcpy2DToArray(cuArray, 0, 0, d_textureData, width*sizeof(unsigned char), width*sizeof(unsigned char), height, cudaMemcpyDefault));
+    errCheck(cudaGraphicsUnmapResources(1, &cudaResource, 0));
+    errCheck(cudaDeviceSynchronize());
+    //==============================
+
+    while (!glfwWindowShouldClose(window)) {
+        glClearColor(0.3, 0.5, 0.7, 1);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        Render::draw_quad(shaderProgram, quad_vao, texture);
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+
+    errCheck(cudaFree(d_textureData));
+    glDeleteTextures(1, &texture);
+    glfwDestroyWindow(window);
+    glfwTerminate();
+}
+
+void read_gl_texture_using_cuda(){
+    // https://www.3dgep.com/opengl-interoperability-with-cuda/
+}
+
+#if 0
 void update_texture(){
     // --------------------------
     // OpenGL setup
@@ -95,7 +184,6 @@ void update_texture(){
     glfwTerminate();
 }
 
-#if 0
 void update_vbo() {
     // --------------------------
     // OpenGL setup
